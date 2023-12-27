@@ -115,6 +115,11 @@ class TrippleBanner extends Module
                 $imgFile[$i-1] = $_POST[$name . $i];
             }
         }
+        if($imgFile === null) {
+            for ($i=1; $i <= $iteration; $i++) {
+                $imgFile[$i-1] = "/";
+            }
+        }
         return $imgFile;
     }
 
