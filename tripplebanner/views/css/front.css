@@ -4,3 +4,54 @@
 *  @license   .l
 */
 
+#trippleBanner {
+    margin-top: 1%;
+    margin-bottom: 1%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+}
+
+.banner-img {
+    object-fit: cover;
+    width: 100%;
+    aspect-ratio: 1;
+    scale: 1.1;
+    transform: skew(-5deg);
+}
+
+.banner-link {
+    width: 32%;
+    transform: skew(5deg);
+    overflow: hidden;
+    text-decoration: none;
+    transition: scale .4s ease;
+}
+
+.banner-link:hover {
+    scale: 1.1;
+}
+
+@media (max-width: 50em) {
+    #trippleBanner {
+        flex-direction: column;
+        height: unset;
+    }
+
+    .banner-link {
+        transform: unset;
+        width: 90%;
+        padding-top: 1.5%;
+        padding-bottom: 1.5%;
+    }
+
+    .banner-img {
+        width: unset;
+        max-width: 100%;
+        scale: unset;
+        transform: unset;
+    }
+
+}

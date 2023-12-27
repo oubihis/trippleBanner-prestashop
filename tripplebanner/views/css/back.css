@@ -4,3 +4,8 @@
 *  @license   .l
 */
 
+.img-thumbnail {
+    max-height: 15rem;
+    max-width: 80%;
+}
+
