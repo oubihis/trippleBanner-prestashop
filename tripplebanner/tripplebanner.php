@@ -78,10 +78,10 @@ class TrippleBanner extends Module
             foreach ($imgFile as $key => $file) {
                 $fileImgType = pathinfo($file['name'], PATHINFO_EXTENSION);
                 if(in_array(strtolower($fileImgType), $allowedImageTypes)) {
-                    // $targetPath = _PS_MODULE_DIR_ . "tripplebanner/views/img/banner-img-" . $key+1 . "." . $fileImgType;
-                    $targetPath = "banner-img-" . $key+1 . "." . $fileImgType;
+                    $targetPath = _PS_MODULE_DIR_ . "tripplebanner/views/img/banner-img-" . $key+1 . "." . $fileImgType;
+                    $imgName = "banner-img-" . $key+1 . "." . $fileImgType;
                     move_uploaded_file($file['tmp_name'], $targetPath);
-                    Configuration::updateValue('TRIPPLEBANNER_IMG_' . $key+1, $targetPath);
+                    Configuration::updateValue('TRIPPLEBANNER_IMG_' . $key+1, $imgName);
                 } else {
                     // Display an error message for invalid file type
                     $this->_errors[] = $this->l('Invalid file type. Allowed types: png, jpg, jpeg.');
