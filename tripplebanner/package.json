@@ -1,0 +1,16 @@
+{
+  "name": "tripplebanner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "back.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "sHKamil - Kamil Hałasa",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

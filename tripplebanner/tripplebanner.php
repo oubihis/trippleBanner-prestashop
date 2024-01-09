@@ -5,6 +5,8 @@
 *  @license   .l
 */
 
+use Prestashop\Module\Tripplebanner\Classes\TrippleBannerModel;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -12,6 +14,8 @@ if (!defined('_PS_VERSION_')) {
 class TrippleBanner extends Module
 {
     protected $config_form = false;
+    private $max_images_on_page = 3;
+    private $allowed_image_types = ['png', 'jpg', 'jpeg'];
 
     public function __construct()
     {
@@ -36,12 +40,8 @@ class TrippleBanner extends Module
     public function install()
     {
         Configuration::updateValue('TRIPPLEBANNER_LIVE_MODE', true);
-        Configuration::updateValue('TRIPPLEBANNER_IMG_1', '');
-        Configuration::updateValue('TRIPPLEBANNER_LINK_1', '');
-        Configuration::updateValue('TRIPPLEBANNER_IMG_2', '');
-        Configuration::updateValue('TRIPPLEBANNER_LINK_2', '');
-        Configuration::updateValue('TRIPPLEBANNER_IMG_3', '');
-        Configuration::updateValue('TRIPPLEBANNER_LINK_3', '');
+
+        include(dirname(__FILE__).'/sql/install.php');
 
         return parent::install() &&
             $this->registerHook('header') &&
@@ -52,59 +52,75 @@ class TrippleBanner extends Module
     public function uninstall()
     {
         Configuration::deleteByName('TRIPPLEBANNER_LIVE_MODE');
-        Configuration::deleteByName('TRIPPLEBANNER_IMG_1');
-        Configuration::deleteByName('TRIPPLEBANNER_LINK_1');
-        Configuration::deleteByName('TRIPPLEBANNER_IMG_2');
-        Configuration::deleteByName('TRIPPLEBANNER_LINK_2');
-        Configuration::deleteByName('TRIPPLEBANNER_IMG_3');
-        Configuration::deleteByName('TRIPPLEBANNER_LINK_3');
+
+        include(dirname(__FILE__).'/sql/uninstall.php');
 
         return parent::uninstall();
     }
 
     public function getContent()
     {
+        if (((bool)Tools::isSubmit('submitTrippleBannerModule')) == true) {
+            $this->postProcess(); // Save all configuration data
+        }
 
-
-        if (Tools::isSubmit('submitTrippleBannerModule')) {
-
-            $allowedImageTypes = ['png', 'jpg', 'jpeg'];
-            for ($i=1; $i <= 3; $i++) {
-                if(isset($_FILES["TRIPPLEBANNER_IMG_" . $i]) && $_FILES["TRIPPLEBANNER_IMG_" . $i]["size"] !== 0) {
-                    $imgFile[$i-1] = $_FILES["TRIPPLEBANNER_IMG_" . $i];
-                }
-            }
-
-            foreach ($imgFile as $key => $file) {
-                $fileImgType = pathinfo($file['name'], PATHINFO_EXTENSION);
-                if(in_array(strtolower($fileImgType), $allowedImageTypes)) {
-                    $targetPath = _PS_MODULE_DIR_ . "tripplebanner/views/img/banner-img-" . $key+1 . "." . $fileImgType;
-                    $imgName = "banner-img-" . $key+1 . "." . $fileImgType;
-                    move_uploaded_file($file['tmp_name'], $targetPath);
-                    Configuration::updateValue('TRIPPLEBANNER_IMG_' . $key+1, $imgName);
+        if (((bool)Tools::isSubmit('submitNewBannerForm')) == true) {
+            if(isset($_FILES["new_banner_img"]) && $_FILES["new_banner_img"]["size"] !== 0) {
+                $img_file = $_FILES["new_banner_img"];
+                $file_img_type = pathinfo($img_file['name'], PATHINFO_EXTENSION);
+                if(in_array(strtolower($file_img_type), $this->allowed_image_types)) {
+                    $random_string = time() . bin2hex(random_bytes(5));
+                    $target_path = _PS_MODULE_DIR_ . "tripplebanner/views/img/" . $random_string . '-' . $img_file['name'];
+                    $img_link = "/modules/tripplebanner/views/img/" . $random_string . '-' . $img_file['name'];
+                    move_uploaded_file($img_file['tmp_name'], $target_path);
+                    TrippleBannerModel::saveBanner($img_link, $_POST['new_link']); // Save new banner
                 } else {
                     // Display an error message for invalid file type
-                    $this->_errors[] = $this->l('Invalid file type. Allowed types: png, jpg, jpeg.');
+                    $this->_errors[] = $this->l('Invalid file type.');
                 }
             }
-            Configuration::updateValue('TRIPPLEBANNER_LIVE_MODE', true);
-            if(!empty($_POST['delete_images'])) $this->removeFromDB($_POST['delete_images']);
-            
-            $links = $this->gatherPostInputs("TRIPPLEBANNER_LINK_", 3);
-            foreach ($links as $key => $link) {
-                Configuration::updateValue('TRIPPLEBANNER_LINK_' . $key+1, $link);
+        }
+
+        if (((bool)Tools::isSubmit('submitBannersForm')) == true) {
+            $this->activateBanners($_POST['switch_banners']);
+            if(!empty($_POST['edit_banners'])) {
+                $links = $_POST['edit_banners'];
+                foreach ($links as $id => $link) {
+                    TrippleBannerModel::editBanner($id, $link[0]);
+                }
             }
-        } 
-        $this->context->smarty->assign('module_dir', $this->_path);
+            if(!empty($_POST['delete_banners'])) {
+                foreach ($_POST['delete_banners'] as $id) {
+                    if($this->deleteImages($id)) {
+                        TrippleBannerModel::deleteById($id);
+                    }
+                }
+            }
+        }
+
+        $this->context->smarty->assign([
+            'module_dir' => $this->_path,
+            'banners' => $this->getBannersWithSize(),
+            'img_folder_size' => $this->getFolderSize() . "MB",
+        ]);
+
         $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
 
         return $output.$this->renderForm();
     }
 
-    protected function removeFromDB($files): void
-    {
-        foreach ($files as $key => $file) {
-            Configuration::updateValue($file, "");
+    protected function deleteImages($image_id): bool {
+        $image_path = TrippleBannerModel::getImagePathById($image_id)[0]["image_path"];
+        $image_name = end(explode('/',$image_path));
+        $target_path = _PS_MODULE_DIR_ . "tripplebanner/views/img/" . $image_name;
+        if (file_exists($target_path)) {
+            if (unlink($target_path)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
         }
     }
 
@@ -158,46 +174,23 @@ class TrippleBanner extends Module
                 ],
                 'input' => [
                     [
-                        'col' => 3,
-                        'type' => 'file',
-                        'desc' => $this->l('Upload image 1 (1/1 aspect ratio preferred, for example 1024x1024)'),
-                        'name' => 'TRIPPLEBANNER_IMG_1',
-                        'label' => $this->l('Upload image 1'),
-                    ],
-                    [
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Enter link for image 1'),
-                        'name' => 'TRIPPLEBANNER_LINK_1',
-                        'label' => $this->l('Enter link for image 1'),
-                    ],
-                    [
-                        'col' => 3,
-                        'type' => 'file',
-                        'desc' => $this->l('Upload image 2 (1/1 aspect ratio preferred, for example 1024x1024)'),
-                        'name' => 'TRIPPLEBANNER_IMG_2',
-                        'label' => $this->l('Upload image 2'),
-                    ],
-                    [
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Enter link for image 2'),
-                        'name' => 'TRIPPLEBANNER_LINK_2',
-                        'label' => $this->l('Enter link for image 2'),
-                    ],
-                    [
-                        'col' => 3,
-                        'type' => 'file',
-                        'desc' => $this->l('Upload image 3 (1/1 aspect ratio preferred, for example 1024x1024)'),
-                        'name' => 'TRIPPLEBANNER_IMG_3',
-                        'label' => $this->l('Upload image 3'),
-                    ],
-                    [
-                        'col' => 3,
-                        'type' => 'text',
-                        'desc' => $this->l('Enter link for image 3'),
-                        'name' => 'TRIPPLEBANNER_LINK_3',
-                        'label' => $this->l('Enter link for image 3'),
+                        'type' => 'switch',
+                        'label' => $this->l('Live mode'),
+                        'name' => 'TRIPPLEBANNER_LIVE_MODE',
+                        'is_bool' => true,
+                        'desc' => $this->l('Use this module in live mode'),
+                        'values' => [
+                            [
+                                'id' => 'active_on',
+                                'value' => true,
+                                'label' => $this->l('Enabled')
+                            ],
+                            [
+                                'id' => 'active_off',
+                                'value' => false,
+                                'label' => $this->l('Disabled')
+                            ]
+                        ],
                     ],
                 ],
                 'submit' => [
@@ -211,13 +204,38 @@ class TrippleBanner extends Module
     {
         return [
             'TRIPPLEBANNER_LIVE_MODE' => Configuration::get('TRIPPLEBANNER_LIVE_MODE', true),
-            'TRIPPLEBANNER_IMG_1' => Configuration::get('TRIPPLEBANNER_IMG_1'),
-            'TRIPPLEBANNER_LINK_1' => Configuration::get('TRIPPLEBANNER_LINK_1'),
-            'TRIPPLEBANNER_IMG_2' => Configuration::get('TRIPPLEBANNER_IMG_2'),
-            'TRIPPLEBANNER_LINK_2' => Configuration::get('TRIPPLEBANNER_LINK_2'),
-            'TRIPPLEBANNER_IMG_3' => Configuration::get('TRIPPLEBANNER_IMG_3'),
-            'TRIPPLEBANNER_LINK_3' => Configuration::get('TRIPPLEBANNER_LINK_3'),
         ];
+    }
+
+    protected function getFolderSize() {
+        $size = 0;
+        $folder = _PS_MODULE_DIR_ . "tripplebanner/views/img/";
+
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($folder)
+        );
+
+        foreach ($files as $file) {
+            if ($file->isFile()) {
+                $size += $file->getSize();
+            }
+        }
+
+        return round(($size/1000)/1000, 2); // Returned size is in MB
+    }
+
+    protected function getBannersWithSize() {
+        $banners = TrippleBannerModel::getAllData();
+
+        foreach ($banners as $key => $banner) {
+            $size = 0;
+            $image_name = end(explode('/',$banner['image_path']));
+            $target_path = _PS_MODULE_DIR_ . "tripplebanner/views/img/" . $image_name;
+            $size = (filesize($target_path)/1000)/1000;
+            $banners[$key]['img_size'] = round($size, 2);
+        }
+
+        return $banners;
     }
 
     /**
@@ -229,6 +247,33 @@ class TrippleBanner extends Module
         foreach (array_keys($form_values) as $key) {
             Configuration::updateValue($key, Tools::getValue($key));
         }
+    }
+
+    protected function activateBanners($banners): void
+    {
+        $toActivate = [];
+        foreach ($banners as $key => $value) {
+            if($value === "on") array_push($toActivate, $key);
+        }
+        
+        if(count($toActivate) <= $this->max_images_on_page) {
+
+            $activated = [];
+            foreach (TrippleBannerModel::getSelected() as $key => $banner) {
+                array_push($activated, $banner["id_banner"]);
+            }
+
+            if(count($activated) !== 0) {
+                foreach ($activated as $key => $id_banner) {
+                    TrippleBannerModel::setActive($id_banner, 0);
+                }
+            }
+
+            foreach ($toActivate as $key => $id_banner) {
+                TrippleBannerModel::setActive($id_banner, 1);
+            }
+        }
+        return; 
     }
 
     public function hookDisplayBackOfficeHeader()
@@ -247,6 +292,10 @@ class TrippleBanner extends Module
 
     public function hookDisplayHome()
     {
+        $this->context->smarty->assign([
+            'banners' => TrippleBannerModel::getSelected(),
+        ]);
+   
         return $this->display(__FILE__, 'views/templates/front/tripple_banner.tpl');
     }
 }
