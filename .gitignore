@@ -1,2 +1,3 @@
 tripplebanner/views/img/*
+tripplebanner/node_modules/*
 !tripplebanner/views/img/index.php
