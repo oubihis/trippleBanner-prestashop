@@ -1,3 +1,9 @@
+{*
+    * @author sHKamil - Kamil Hałasa
+    * @copyright sHKamil - Kamil Hałasa
+    *  @license   GPL
+    *}
+
 {if Configuration::get('TRIPPLEBANNER_LIVE_MODE')}
     {if !empty($banners)}
         {if count($banners) > 1 && count($banners) < 4}

@@ -1,9 +1,14 @@
 <?php
 /**
-*  @author    sHKamil - Kamil Hałasa
-*  @copyright sHKamil - Kamil Hałasa
-*  @license   .l
-*/
+ *  @author    sHKamil - Kamil Hałasa
+ *  @copyright sHKamil - Kamil Hałasa
+ *   @license   GPL
+ */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 $sql = array();
 
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'tripplebanner` (

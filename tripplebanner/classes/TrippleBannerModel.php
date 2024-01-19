@@ -1,11 +1,15 @@
 <?php
 /**
-*  @author    sHKamil - Kamil Hałasa
-*  @copyright sHKamil - Kamil Hałasa
-*  @license   .l
-*/
+ *  @author    sHKamil - Kamil Hałasa
+ *  @copyright sHKamil - Kamil Hałasa
+ *   @license   GPL
+ */
 
 namespace Prestashop\Module\Tripplebanner\Classes;
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 class TrippleBannerModel extends \ObjectModel
 {

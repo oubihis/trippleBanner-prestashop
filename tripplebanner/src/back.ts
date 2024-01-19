@@ -1,8 +1,8 @@
 /**
-*  @author    sHKamil - Kamil Hałasa
-*  @copyright sHKamil - Kamil Hałasa
-*  @license   .l
-*/
+ *  @author    sHKamil - Kamil Hałasa
+ *  @copyright sHKamil - Kamil Hałasa
+ *   @license   GPL
+ */
 
 type banner = {
     id_banner: number,

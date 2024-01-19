@@ -1,9 +1,9 @@
 <?php
 /**
-*  @author    sHKamil - Kamil Hałasa
-*  @copyright sHKamil - Kamil Hałasa
-*  @license   .l
-*/
+ *  @author    sHKamil - Kamil Hałasa
+ *  @copyright sHKamil - Kamil Hałasa
+ *   @license   GPL
+ */
 
 use Prestashop\Module\Tripplebanner\Classes\TrippleBannerModel;
 
@@ -73,7 +73,7 @@ class TrippleBanner extends Module
                     $target_path = _PS_MODULE_DIR_ . "tripplebanner/views/img/" . $random_string . '-' . $img_file['name'];
                     $img_link = "/modules/tripplebanner/views/img/" . $random_string . '-' . $img_file['name'];
                     move_uploaded_file($img_file['tmp_name'], $target_path);
-                    TrippleBannerModel::saveBanner($img_link, $_POST['new_link']); // Save new banner
+                    TrippleBannerModel::saveBanner($img_link, Tools::getValue('new_link')); // Save new banner
                 } else {
                     // Display an error message for invalid file type
                     $this->_errors[] = $this->l('Invalid file type.');
@@ -82,15 +82,15 @@ class TrippleBanner extends Module
         }
 
         if (((bool)Tools::isSubmit('submitBannersForm')) == true) {
-            $this->activateBanners($_POST['switch_banners']);
-            if(!empty($_POST['edit_banners'])) {
-                $links = $_POST['edit_banners'];
+            $this->activateBanners(Tools::getValue('switch_banners'));
+            if(!empty(Tools::getValue('edit_banners'))) {
+                $links = Tools::getValue('edit_banners');
                 foreach ($links as $id => $link) {
                     TrippleBannerModel::editBanner($id, $link[0]);
                 }
             }
-            if(!empty($_POST['delete_banners'])) {
-                foreach ($_POST['delete_banners'] as $id) {
+            if(!empty(Tools::getValue('delete_banners'))) {
+                foreach (Tools::getValue('delete_banners') as $id) {
                     if($this->deleteImages($id)) {
                         TrippleBannerModel::deleteById($id);
                     }
@@ -127,8 +127,8 @@ class TrippleBanner extends Module
     protected function gatherPostInputs($name, $iteration): array
     {
         for ($i=1; $i <= $iteration; $i++) {
-            if(isset($_POST[$name. $i]) && $_POST[$name . $i] !== "") {
-                $imgFile[$i-1] = $_POST[$name . $i];
+            if(Tools::getValue($name . $i) && Tools::getValue($name . $i) !== "") {
+                $imgFile[$i-1] = Tools::getValue($name . $i);
             }
         }
         if($imgFile === null) {

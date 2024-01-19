@@ -1,4 +1,13 @@
 <?php
+/**
+ *  @author    sHKamil - Kamil Hałasa
+ *  @copyright sHKamil - Kamil Hałasa
+ *   @license   GPL
+ */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 use Prestashop\Module\Tripplebanner\Classes\TrippleBannerModel;
 
