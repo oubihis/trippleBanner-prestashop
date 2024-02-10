@@ -229,7 +229,8 @@ class TrippleBanner extends Module
 
         foreach ($banners as $key => $banner) {
             $size = 0;
-            $image_name = end(explode('/',$banner['image_path']));
+            $image_path_parts = explode('/', $banner['image_path']);
+            $image_name = end($image_path_parts);
             $target_path = _PS_MODULE_DIR_ . "tripplebanner/views/img/" . $image_name;
             $size = (filesize($target_path)/1000)/1000;
             $banners[$key]['img_size'] = round($size, 2);
