@@ -111,7 +111,8 @@ class TrippleBanner extends Module
 
     protected function deleteImages($image_id): bool {
         $image_path = TrippleBannerModel::getImagePathById($image_id)[0]["image_path"];
-        $image_name = end(explode('/',$image_path));
+        $image_path_parts = explode('/', $image_path);
+        $image_name = end($image_path_parts);
         $target_path = _PS_MODULE_DIR_ . "tripplebanner/views/img/" . $image_name;
         if (file_exists($target_path)) {
             if (unlink($target_path)) {
@@ -229,7 +230,8 @@ class TrippleBanner extends Module
 
         foreach ($banners as $key => $banner) {
             $size = 0;
-            $image_name = end(explode('/',$banner['image_path']));
+            $image_path_parts = explode('/', $banner['image_path']);
+            $image_name = end($image_path_parts);
             $target_path = _PS_MODULE_DIR_ . "tripplebanner/views/img/" . $image_name;
             $size = (filesize($target_path)/1000)/1000;
             $banners[$key]['img_size'] = round($size, 2);
@@ -251,30 +253,35 @@ class TrippleBanner extends Module
 
     protected function activateBanners($banners): void
     {
+        if (!is_array($banners)) {
+            // Handle the case when $banners is not an array
+            return;
+        }
+        
         $toActivate = [];
         foreach ($banners as $key => $value) {
             if($value === "on") array_push($toActivate, $key);
         }
         
         if(count($toActivate) <= $this->max_images_on_page) {
-
+    
             $activated = [];
             foreach (TrippleBannerModel::getSelected() as $key => $banner) {
                 array_push($activated, $banner["id_banner"]);
             }
-
+    
             if(count($activated) !== 0) {
                 foreach ($activated as $key => $id_banner) {
                     TrippleBannerModel::setActive($id_banner, 0);
                 }
             }
-
+    
             foreach ($toActivate as $key => $id_banner) {
                 TrippleBannerModel::setActive($id_banner, 1);
             }
         }
-        return; 
     }
+
 
     public function hookDisplayBackOfficeHeader()
     {
